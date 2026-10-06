@@ -18,11 +18,20 @@ if (-not $condaExe) {
     $filename = "Miniforge3-$version-Windows-x86_64.exe"
     $url = "https://github.com/conda-forge/miniforge/releases/download/$version/$filename"
     $installer = "$appDir\.runtime\downloads\$filename"
-    Write-Host 'Conda was not found. Downloading Miniforge into this application folder…'
+    Write-Host 'Conda was not found. Downloading Miniforge into this application folder...'
     Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $installer
     Invoke-WebRequest -UseBasicParsing -Uri "$url.sha256" -OutFile "$installer.sha256"
     $expected = ((Get-Content -LiteralPath "$installer.sha256" -Raw).Trim() -split '\s+')[0]
-    $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer).Hash
+    # Use .NET directly: Windows PowerShell may inherit a PowerShell 7 module
+    # search path where Get-FileHash cannot be auto-loaded.
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($installer)
+    try {
+        $actual = [BitConverter]::ToString($sha256.ComputeHash($stream)).Replace('-', '')
+    } finally {
+        $stream.Dispose()
+        $sha256.Dispose()
+    }
     if ($expected -notmatch '^[a-fA-F0-9]{64}$' -or $actual -ne $expected) { throw 'Installer checksum verification failed. Please launch again.' }
     $prefix = "$appDir\.runtime\miniforge"
     # /D must be the last NSIS argument. Do not quote the /D value.

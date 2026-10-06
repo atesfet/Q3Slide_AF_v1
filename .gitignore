@@ -1,0 +1,17 @@
+.runtime/
+results/
+input/*
+!input/.gitkeep
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.venv/
+.env
+*.log
+test-results/
+.pytest_cache/
+*.tif
+*.tiff
+*.npz
+*.npy

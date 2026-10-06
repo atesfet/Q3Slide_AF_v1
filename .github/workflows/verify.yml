@@ -1,0 +1,52 @@
+name: Verify desktop app
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      Q3SLIDE_LOCAL_CONDA: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: ""
+          auto-activate: false
+      - name: Verify Unix launcher and build isolated environment
+        if: runner.os != 'Windows'
+        shell: bash -el {0}
+        run: |
+          bash -n Start.sh Start.command scripts/launch.sh
+          bash Start.sh --setup-only
+      - name: Validate Linux desktop entry
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y desktop-file-utils
+          desktop-file-validate Start.desktop
+      - name: Verify Windows launcher and build isolated environment
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/scripts/launch.ps1", [ref]$null, [ref]$parseErrors) | Out-Null
+          if ($parseErrors) { throw ($parseErrors | Out-String) }
+          cmd /c Start.bat --setup-only
+          if ($LASTEXITCODE -ne 0) { throw 'Windows bootstrap failed.' }
+      - name: Calibration, reference preview, server and pipeline tests
+        shell: bash -el {0}
+        env:
+          MPLBACKEND: Agg
+        run: |
+          conda run --no-capture-output -p .runtime/env python -m unittest discover -s tests -v
+          conda run --no-capture-output -p .runtime/env python -m tests.run_pipeline_smoke_test

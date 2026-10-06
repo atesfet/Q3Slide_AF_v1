@@ -1,0 +1,11 @@
+name: q3slide-af-v1
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.11
+  - numpy=1.26.*
+  - scipy=1.14.*
+  - tifffile=2024.9.*
+  - matplotlib=3.9.*
+  - pillow=11.0.*

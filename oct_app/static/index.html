@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Q3Slide AF · OCT workbench</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Q3Slide AF home"
+        ><img src="/favicon.svg" alt="" /><span
+          >Q3Slide <b>AF</b><small>OCT WORKBENCH</small></span
+        ></a
+      >
+      <nav aria-label="Workspace navigation">
+        <a class="active" href="#workspace">Workspace</a
+        ><a href="#resultsSection">Results</a
+        ><button id="methodButton" class="nav-button">Method</button>
+      </nav>
+      <div class="top-actions">
+        <span class="server-chip" id="serverChip"><i></i> Local session</span
+        ><button
+          id="themeButton"
+          class="icon-button"
+          aria-label="Switch color theme"
+          title="Switch color theme"
+        >
+          ◐</button
+        ><button class="button ghost" id="quitButton">Quit app</button>
+      </div>
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">VOLUME → TISSUE PROJECTION</p>
+          <h1>A clearer view of your tissue.</h1>
+          <p>
+            Review reference tiles, correct the glass response, and inspect
+            every result.
+          </p>
+        </div>
+        <div class="intro-tag">
+          <span class="local-dot"></span> Images stay on this computer
+        </div>
+      </section>
+      <div
+        class="connection-banner"
+        id="connectionBanner"
+        role="status"
+        hidden
+      ></div>
+      <section id="workspace" class="workspace-grid">
+        <article class="panel setup-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="step">01</span>
+              <h2>Configure</h2>
+            </div>
+            <span class="mini-label">Input & calibration</span>
+          </div>
+          <label class="field"
+            ><span>Image folder</span>
+            <div class="input-action">
+              <input
+                id="inputFolder"
+                type="text"
+                spellcheck="false"
+                placeholder="Path to your TIFF folder"
+              /><button class="button secondary" id="scanButton">Scan</button>
+            </div>
+            <small
+              >Choose any local folder or place TIFFs in the app’s input
+              folder.</small
+            ></label
+          >
+          <label class="field"
+            ><span>OCT volume</span
+            ><select id="imageSelect" required></select
+          ></label>
+          <label class="field"
+            ><span>Patch FOV <b>*</b><em class="field-tag">Editable</em></span>
+            <div class="unit-input">
+              <input
+                id="fovInput"
+                type="number"
+                min="0.001"
+                step="any"
+                value="700"
+                required
+                aria-describedby="fovHint"
+              /><em>µm / patch</em>
+            </div>
+            <small id="fovHint"
+              >Autofilled from the filename when available; otherwise 700 µm.
+              Confirm your acquisition FOV.</small
+            ></label
+          >
+          <div class="geometry-card" id="geometryCard" aria-live="polite">
+            <span class="geometry-placeholder"
+              >Select an image to read its calibration.</span
+            >
+          </div>
+          <fieldset class="choice-group">
+            <legend>Analysis</legend>
+            <label
+              ><input type="radio" name="action" value="preprocess" /><span
+                ><b>Projection</b><small>Correct & project</small></span
+              ></label
+            ><label
+              ><input type="radio" name="action" value="spacing" /><span
+                ><b>Spacing</b><small>Glass separation</small></span
+              ></label
+            ><label
+              ><input type="radio" name="action" value="both" checked /><span
+                ><b>Both</b><small>Full workflow</small></span
+              ></label
+            >
+          </fieldset>
+          <div class="auto-row">
+            <div>
+              <b>Automatic geometry</b
+              ><small
+                >Infer rows and columns from FOV and TIFF calibration.</small
+              >
+            </div>
+            <label class="switch"
+              ><input
+                id="autoMode"
+                type="checkbox"
+                checked
+                aria-label="Automatic geometry" /><span></span
+            ></label>
+          </div>
+          <button
+            class="advanced-toggle"
+            id="advancedToggle"
+            aria-expanded="false"
+            aria-controls="advancedPanel"
+          >
+            Advanced parameters <span>+</span>
+          </button>
+          <div class="advanced" id="advancedPanel" hidden>
+            <div class="field-grid">
+              <label class="field"
+                ><span>Rows</span
+                ><input
+                  id="rowsInput"
+                  type="number"
+                  min="1"
+                  placeholder="Auto" /></label
+              ><label class="field"
+                ><span>Columns</span
+                ><input
+                  id="columnsInput"
+                  type="number"
+                  min="1"
+                  placeholder="Auto"
+              /></label>
+            </div>
+            <label class="field"
+              ><span>Manual reference coordinates</span
+              ><input
+                id="backgroundInput"
+                type="text"
+                placeholder="0,5; 0,6; 1,9"
+              /><small
+                >Zero-based row,column. Reviewed tiles on the right take
+                priority.</small
+              ></label
+            >
+            <div class="field-grid">
+              <label class="field"
+                ><span>Correction strength</span
+                ><input
+                  id="strengthInput"
+                  type="number"
+                  min="0"
+                  max="1.25"
+                  step="0.05"
+                  value="1" /></label
+              ><label class="field"
+                ><span>Selected slices / pixel</span
+                ><input id="topKInput" type="number" min="1" value="5"
+              /></label>
+            </div>
+            <div class="field-grid">
+              <label class="field"
+                ><span>Interface margin (µm)</span
+                ><input
+                  id="interfaceMarginInput"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value="0" /></label
+              ><label class="field"
+                ><span>Noise threshold (σ)</span
+                ><input
+                  id="noiseInput"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value="2.5"
+              /></label>
+            </div>
+            <div class="field-grid">
+              <label class="field"
+                ><span>Spacing block (µm)</span
+                ><input
+                  id="blockInput"
+                  type="number"
+                  min="10"
+                  value="100" /></label
+              ><label class="field"
+                ><span>Min. glass gap (µm)</span
+                ><input
+                  id="minimumSeparationInput"
+                  type="number"
+                  min="1"
+                  value="20"
+              /></label>
+            </div>
+            <label class="field"
+              ><span>Refractive index</span
+              ><input
+                id="refractiveInput"
+                type="number"
+                min="0.1"
+                step="0.01"
+                placeholder="Optional"
+              /><small
+                >Use only if the scanner depth is an optical-path
+                coordinate.</small
+              ></label
+            >
+            <label class="field"
+              ><span>Output folder</span
+              ><input id="outputFolder" type="text" spellcheck="false" /><small
+                >Each analysis creates a separate folder named after the
+                image.</small
+              ></label
+            >
+          </div>
+          <div class="form-error" id="formError" role="alert" hidden></div>
+          <button class="button primary run-button" id="runButton">
+            Run analysis <span>↗</span>
+          </button>
+          <p class="run-note" id="runNote">
+            Use automatic references, or review and edit them in the mosaic.
+          </p>
+        </article>
+        <div class="review-column">
+          <article class="panel reference-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="step">02</span>
+                <h2>Review blank tiles</h2>
+              </div>
+              <button id="previewButton" class="button secondary">
+                Generate initial projection
+              </button>
+            </div>
+            <p class="panel-copy">
+              Candidate no-tissue references are highlighted automatically.
+              Click any tile to include or exclude it.
+            </p>
+            <div id="previewEmpty" class="preview-empty">
+              <div class="tile-art" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+              <h3>Start with a reference check</h3>
+              <p>
+                Generate a small projection of the full Z stack to review your
+                reference tiles before correction.
+              </p>
+            </div>
+            <div id="previewLoading" class="preview-loading" hidden>
+              <span class="spinner"></span>
+              <p id="previewProgress">Preparing mosaic…</p>
+            </div>
+            <div id="previewError" class="form-error" role="alert" hidden></div>
+            <div id="previewContent" hidden>
+              <div class="viewer-toolbar">
+                <div class="segmented" aria-label="Preview display">
+                  <button id="rawViewButton" aria-pressed="true">Raw max</button
+                  ><button id="contrastViewButton" aria-pressed="false">
+                    Tissue contrast
+                  </button>
+                </div>
+                <span id="referenceCount" class="reference-count"></span>
+              </div>
+              <div class="mosaic-viewport">
+                <div id="mosaicStage" class="mosaic-stage">
+                  <img
+                    id="mosaicImage"
+                    alt="Initial OCT projection with selectable acquisition tiles"
+                  />
+                  <div
+                    id="tileGrid"
+                    class="tile-grid"
+                    aria-label="Reference tile selection"
+                  ></div>
+                </div>
+              </div>
+              <div class="selection-toolbar">
+                <span class="legend"
+                  ><i></i> Reference tile
+                  <small>row,column · zero-based</small></span
+                >
+                <div>
+                  <button id="restoreReferences" class="text-button">
+                    Restore automatic</button
+                  ><button id="clearReferences" class="text-button">
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <p class="preview-disclaimer" id="previewDisclaimer"></p>
+              <details class="tile-report">
+                <summary>Inspect automatic rankings</summary>
+                <div class="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Tile</th>
+                        <th>Blank score ↓</th>
+                        <th>Evidence</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tileReportBody"></tbody>
+                  </table>
+                </div>
+              </details>
+            </div>
+          </article>
+          <article class="panel monitor-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="step">03</span>
+                <h2>Processing</h2>
+              </div>
+              <span class="status-badge idle" id="statusBadge">Ready</span>
+            </div>
+            <div id="emptyMonitor" class="empty-monitor">
+              <p>
+                Ready when you are. Your reference review is optional, but
+                recommended.
+              </p>
+            </div>
+            <div id="activeMonitor" hidden>
+              <div class="progress-header">
+                <div>
+                  <small id="runId"></small>
+                  <h3 id="stageText">Starting</h3>
+                </div>
+                <strong id="progressText">0%</strong>
+              </div>
+              <div class="progress-track"><div id="progressBar"></div></div>
+              <ol class="pipeline-steps" id="pipelineSteps">
+                <li>Interfaces</li>
+                <li>References</li>
+                <li>Z alignment</li>
+                <li>Projection</li>
+                <li>Export</li>
+              </ol>
+              <div class="run-meta">
+                <span id="runOutput"></span><span id="elapsedTime"></span>
+              </div>
+              <div class="error-card" id="jobError" role="alert" hidden>
+                <b id="jobErrorTitle"></b>
+                <p id="jobErrorText"></p>
+                <details>
+                  <summary>Technical details</summary>
+                  <pre id="technicalError"></pre>
+                </details>
+              </div>
+              <details class="log-details">
+                <summary>
+                  Processing log
+                  <button class="text-button" id="copyLog">Copy</button>
+                </summary>
+                <pre class="log" id="logOutput"></pre>
+              </details>
+              <button class="button secondary cancel" id="cancelButton">
+                Cancel analysis
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="results-section" id="resultsSection" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">QUALITY CONTROL & EXPORT</p>
+            <h2>Inspect the result.</h2>
+            <p id="resultImageName"></p>
+          </div>
+          <button class="button secondary" id="openFolderLink">
+            Open output folder ↗
+          </button>
+        </div>
+        <div class="summary-strip" id="summaryStrip"></div>
+        <div class="results-toolbar">
+          <div class="segmented">
+            <button id="showAllResults" aria-pressed="true">All outputs</button
+            ><button id="showImages" aria-pressed="false">QC images</button
+            ><button id="showDownloads" aria-pressed="false">Downloads</button>
+          </div>
+          <span>Click a QC image to enlarge</span>
+        </div>
+        <div class="result-grid" id="resultGrid"></div>
+      </section>
+      <section class="session-history" id="historySection" hidden>
+        <div class="section-heading">
+          <h2>This session</h2>
+          <small
+            >Results remain in their output folders after the app closes.</small
+          >
+        </div>
+        <div id="historyList"></div>
+      </section>
+    </main>
+    <footer>
+      <span>Q3Slide AF <b>v1.0</b></span
+      ><span>Conventional glass correction · local processing</span>
+    </footer>
+    <dialog id="quitDialog">
+      <h3>Close Q3Slide?</h3>
+      <p>
+        This stops the local server and any active analysis. Saved results
+        remain in the output folder.
+      </p>
+      <div class="dialog-actions">
+        <button class="button secondary" id="quitCancel">Keep working</button
+        ><button class="button danger" id="quitConfirm">Quit app</button>
+      </div>
+    </dialog>
+    <dialog id="methodDialog">
+      <h3>How correction works</h3>
+      <p>
+        Blank reference tiles characterize the repeatable coverslip response.
+        The model follows each tile’s slide surface, and its subtraction
+        amplitude is capped by the blank references to reduce tissue loss.
+      </p>
+      <p>
+        After Z alignment, the projection averages up to the configured number
+        of strong, depth-supported tissue values per pixel. The default is five
+        slices. A tissue mask suppresses background; disconnected tissue
+        fragments can be excluded.
+      </p>
+      <p>
+        When two coverslips are reliable, their depths constrain the tissue
+        search. Otherwise preprocessing continues and reports an error. The
+        reference preview is an uncorrected, sampled projection for visual
+        review; its candidate blank ranking needs human judgment.
+      </p>
+      <p>
+        Z slice spacing comes from TIFF calibration. Check QC for remaining
+        glass and tissue removal, especially where glass and tissue overlap.
+      </p>
+      <div class="dialog-actions">
+        <button class="button primary" id="methodClose">Got it</button>
+      </div>
+    </dialog>
+    <dialog id="imageDialog" class="image-dialog">
+      <div class="image-dialog-heading">
+        <h3 id="imageDialogTitle"></h3>
+        <button
+          class="icon-button"
+          id="imageClose"
+          aria-label="Close enlarged image"
+        >
+          ×
+        </button>
+      </div>
+      <img id="imageDialogImage" alt="Enlarged QC image" />
+    </dialog>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Q3Slide AF
+Comment=Set up and open the local OCT preprocessing workbench
+Exec=bash -c "exec bash \\"\\$(dirname \\"\\$1\\")/Start.sh\\"" q3slide %k
+TryExec=bash
+Icon=applications-science
+Terminal=true
+Categories=Science;Education;

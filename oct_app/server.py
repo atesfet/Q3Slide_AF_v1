@@ -236,6 +236,9 @@ class Handler(BaseHTTPRequestHandler):
             if self.headers.get('Sec-Fetch-Site') == 'cross-site' or (origin and origin not in allowed):
                 raise UserFacingError('Open Q3Slide from its local server address to use this API.')
             payload = self._read_json()
+            if route in {'/api/inspect', '/api/previews', '/api/jobs'}:
+                from .input_volume import prepare_input
+                payload = prepare_input(payload)
             if route == '/api/browse':
                 kind = str(payload.get('kind', 'image'))
                 chosen = choose_local_path(kind, str(payload.get('initial_dir', self.app.input_dir)))
@@ -270,7 +273,7 @@ class Handler(BaseHTTPRequestHandler):
                 rows = None if auto_mode or not payload.get("rows") else int(payload["rows"])
                 columns = None if auto_mode or not payload.get("columns") else int(payload["columns"])
                 geometry = inspect_geometry(image_path, fov_um, rows, columns)
-                self._json({"ok": True, "geometry": geometry.as_dict()})
+                self._json({"ok": True, "geometry": geometry.as_dict(), 'input_provenance': payload.get('input_provenance')})
                 return
             if route == "/api/jobs":
                 required = ["image_path", "fov_um", "action"]

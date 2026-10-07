@@ -131,6 +131,8 @@ async function browseLocal(kind) {
 function imageChanged() {
   const option = $("imageSelect").selectedOptions[0];
   if (!option?.value) return;
+  $("inputLayout").value = "metadata";
+  for (const id of ["voxelZ", "voxelY", "voxelX"]) $(id).value = "";
   $("fovInput").value = option.dataset.fov || 700;
   $("fovHint").textContent =
     `Autofilled: ${option.dataset.reason}. You can type a different patch FOV.`;
@@ -159,6 +161,8 @@ function geometryPayload() {
     auto_mode: $("autoMode").checked,
     rows: $("rowsInput").value || null,
     columns: $("columnsInput").value || null,
+    input_layout: $("inputLayout").value,
+    voxel_size_um_zyx: [$("voxelZ").value, $("voxelY").value, $("voxelX").value],
   };
 }
 async function inspectImage() {
@@ -174,9 +178,10 @@ async function inspectImage() {
     if (revision !== inspectionRevision) return;
     const g = data.geometry;
     $("geometryCard").innerHTML =
-      `<div class="geometry-grid"><div><small>Volume · Z × Y × X</small><strong>${g.shape_zyx.join(" × ")}</strong></div><div><small>Voxel · TIFF metadata</small><strong>${g.voxel_size_um_zyx.map((v) => Number(v).toFixed(3)).join(" × ")} µm</strong></div><div><small>Patch grid · rows × cols</small><strong>${g.rows} × ${g.columns}</strong></div><div><small>Patch · Y × X</small><strong>${g.patch_shape_yx.join(" × ")} px</strong></div></div>`;
+      `<div class="geometry-grid"><div><small>Volume · Z × Y × X</small><strong>${g.shape_zyx.join(" × ")}</strong></div><div><small>Voxel · ${escapeHtml(data.input_provenance?.calibration_source || "TIFF metadata")}</small><strong>${g.voxel_size_um_zyx.map((v) => Number(v).toFixed(3)).join(" × ")} µm</strong></div><div><small>Patch grid · rows × cols</small><strong>${g.rows} × ${g.columns}</strong></div><div><small>Patch · Y × X</small><strong>${g.patch_shape_yx.join(" × ")} px</strong></div></div>`;
     geometryReady = true;
   } catch (error) {
+    $("calibrationDetails").open = true;
     if (revision === inspectionRevision)
       $("geometryCard").innerHTML =
         `<div class="form-error">${escapeHtml(error.message)}</div>`;
@@ -560,6 +565,8 @@ $("scanButton").addEventListener("click", scanFolder);
 $("browseImageButton").addEventListener("click", () => browseLocal("image"));
 $("browseFolderButton").addEventListener("click", () => browseLocal("folder"));
 $("imageSelect").addEventListener("change", imageChanged);
+$("inputLayout").addEventListener("change", geometryEdited);
+for (const id of ["voxelZ", "voxelY", "voxelX"]) $(id).addEventListener("input", geometryEdited);
 $("fovInput").addEventListener("input", geometryEdited);
 $("rowsInput").addEventListener("input", geometryEdited);
 $("columnsInput").addEventListener("input", geometryEdited);

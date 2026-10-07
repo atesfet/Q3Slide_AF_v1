@@ -241,6 +241,8 @@ def run_pipeline(
     run_command: Callable[[list[str], str, int], None],
     update: Callable[[str, int], None],
 ) -> dict:
+    from .input_volume import prepare_input
+    config = prepare_input(config)
     image_path = Path(config["image_path"]).expanduser().resolve()
     fov_um = float(config["fov_um"])
     auto_mode = bool(config.get("auto_mode", True))

@@ -102,6 +102,23 @@
               Confirm your acquisition FOV.</small
             ></label
           >
+          <details id="calibrationDetails" style="margin-bottom: 16px">
+            <summary>TIFF layout &amp; voxel calibration</summary>
+            <label class="field"><span>Stored volume layout</span>
+              <select id="inputLayout">
+                <option value="metadata">Read layout from metadata</option>
+                <option value="ZYX">Pages are depth: Z × Y × X</option>
+                <option value="YZX">Resliced: Y × Z × X (rows are depth)</option>
+              </select>
+            </label>
+            <small>Generic IYX stacks use verified reconstruction sidecars when available; otherwise choose a layout. Never infer depth from section thickness or the shortest dimension.</small>
+            <div class="field-grid">
+              <label class="field"><span>Z voxel (µm)</span><input id="voxelZ" type="number" min="0.000001" step="any" placeholder="Metadata" /></label>
+              <label class="field"><span>Y pixel (µm)</span><input id="voxelY" type="number" min="0.000001" step="any" placeholder="Metadata" /></label>
+              <label class="field"><span>X pixel (µm)</span><input id="voxelX" type="number" min="0.000001" step="any" placeholder="Metadata" /></label>
+            </div>
+            <small>Leave all blank to use calibrated metadata. To override or supply missing calibration, enter all three physical sizes. A lossless normalized copy is cached; the original is never changed.</small>
+          </details>
           <div class="geometry-card" id="geometryCard" aria-live="polite">
             <span class="geometry-placeholder"
               >Select an image to read its calibration.</span

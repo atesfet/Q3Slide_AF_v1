@@ -20,6 +20,8 @@ def main() -> None:
     parser.add_argument("--block-size-um", type=float, default=100.0)
     parser.add_argument("--minimum-separation-um", type=float, default=20.0)
     parser.add_argument("--refractive-index", type=float)
+    parser.add_argument('--input-layout', choices=['metadata', 'ZYX', 'YZX'], default='metadata')
+    parser.add_argument('--voxel-um-zyx', nargs=3, type=float, metavar=('Z', 'Y', 'X'))
     args = parser.parse_args()
 
     config = {
@@ -31,6 +33,8 @@ def main() -> None:
         "block_size_um": args.block_size_um,
         "minimum_separation_um": args.minimum_separation_um,
         "refractive_index": args.refractive_index,
+        'input_layout': args.input_layout,
+        'voxel_size_um_zyx': args.voxel_um_zyx,
     }
 
     def update(stage: str, progress: int) -> None:

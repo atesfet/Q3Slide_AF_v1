@@ -3,6 +3,8 @@ from __future__ import annotations
 import subprocess
 import tempfile
 from pathlib import Path
+import numpy as np
+import tifffile
 
 from oct_app.pipeline import APP_ROOT, run_pipeline
 from tests.test_core import write_synthetic_volume
@@ -58,6 +60,24 @@ def main() -> None:
         assert (run_dir/'reference_selection.json').is_file()
         for item in result['files']:
             assert (run_dir/item['path']).is_file(), item['path']
+
+        # The same physical volume stored as generic, uncalibrated YZX pages
+        # must yield exactly the same projection after lossless normalization.
+        resliced = temporary_path/'resliced_100umFOV.tiff'
+        tifffile.imwrite(resliced, tifffile.imread(image).swapaxes(0,1), metadata=None, photometric='minisblack')
+        resliced_dir = temporary_path/'resliced_result'
+        resliced_result = run_pipeline({
+            'image_path': str(resliced), 'input_layout': 'YZX',
+            'voxel_size_um_zyx': [2,2,2], 'fov_um': 100, 'action': 'both',
+            'auto_mode': True, 'strength': 1.0, 'interface_margin_um': 0,
+            'top_k': 5, 'noise_sigma': 1.5, 'block_size_um': 40,
+            'minimum_separation_um': 20,
+            'reference_patches': [[0,0], [0,3], [3,0], [3,3]],
+        }, resliced_dir, run_command, update)
+        np.testing.assert_array_equal(
+            tifffile.imread(run_dir/'synthetic_100umFOV_preprocessed.tif'),
+            tifffile.imread(resliced_dir/'resliced_100umFOV_preprocessed.tif'))
+        assert resliced_result['geometry']['shape_zyx'] == result['geometry']['shape_zyx']
 
         fallback_dir = temporary_path / "result_without_pair"
 

@@ -67,7 +67,7 @@ def main():
         elif current.get('specification_sha256') != digest:
             print('Updating the application environment…', flush=True)
             command([conda, 'env', 'update', '--prefix', str(PREFIX), '--file', str(specification), '--prune'])
-        verification = 'import numpy, scipy, tifffile, matplotlib, PIL; from oct_app.pipeline import inspect_geometry; print("Q3Slide environment verified.")'
+        verification = 'import numpy, scipy, tifffile, matplotlib, PIL, tkinter; from oct_app.pipeline import inspect_geometry; print("Q3Slide environment verified.")'
         command([conda, 'run', '--no-capture-output', '--prefix', str(PREFIX), 'python', '-c', verification])
         stamp.write_text(json.dumps({'specification_sha256': digest, 'environment_prefix': str(PREFIX)}, indent=2))
     if not args.setup_only:

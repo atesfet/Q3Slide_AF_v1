@@ -22,6 +22,40 @@ from .preview import PreviewManager
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 STATIC_ROOT = Path(__file__).resolve().parent / "static"
+PICKER_LOCK = threading.Lock()
+PICKER_PROCESS = None
+
+
+def stop_picker():
+    process = PICKER_PROCESS
+    if process is not None and process.poll() is None:
+        process.terminate()
+
+
+def choose_local_path(kind: str, initial_dir: str) -> str | None:
+    global PICKER_PROCESS
+    if kind not in {'image', 'folder'}:
+        raise UserFacingError('Choose an image or folder.')
+    if not PICKER_LOCK.acquire(blocking=False):
+        raise UserFacingError('A file chooser is already open. Complete or cancel that dialog first.')
+    try:
+        process = subprocess.Popen([sys.executable, '-m', 'oct_app.file_picker', '--kind', kind,
+                                 '--initial-dir', str(initial_dir)], cwd=APP_ROOT,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        PICKER_PROCESS = process
+        output, _ = process.communicate(timeout=900)
+        if process.returncode != 0:
+            raise UserFacingError('The system file chooser could not open. Enter the folder path manually instead.')
+        data = json.loads(output)
+        if data.get('error'):
+            raise UserFacingError(data['error'])
+        return data.get('path')
+    except (subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
+        raise UserFacingError('The file chooser timed out or could not return a selection. Please try again.') from exc
+    finally:
+        stop_picker()
+        PICKER_PROCESS = None
+        PICKER_LOCK.release()
 
 
 def scan_images(folder: Path) -> list[dict]:
@@ -202,6 +236,27 @@ class Handler(BaseHTTPRequestHandler):
             if self.headers.get('Sec-Fetch-Site') == 'cross-site' or (origin and origin not in allowed):
                 raise UserFacingError('Open Q3Slide from its local server address to use this API.')
             payload = self._read_json()
+            if route == '/api/browse':
+                kind = str(payload.get('kind', 'image'))
+                chosen = choose_local_path(kind, str(payload.get('initial_dir', self.app.input_dir)))
+                if not chosen:
+                    self._json({'ok': True, 'cancelled': True})
+                    return
+                path = Path(chosen).expanduser().resolve()
+                if kind == 'image':
+                    if not path.is_file() or path.suffix.lower() not in {'.tif', '.tiff'}:
+                        raise UserFacingError('Please choose a TIFF image (.tif or .tiff).')
+                    folder = path.parent
+                    fov, reason = suggest_fov(path)
+                    images = [{'name': path.name, 'path': str(path), 'relative_path': path.name,
+                               'size_bytes': path.stat().st_size, 'suggested_fov_um': fov,
+                               'suggestion_reason': reason}]
+                else:
+                    folder = path
+                    images = scan_images(folder)
+                self.app.input_dir = folder
+                self._json({'ok': True, 'cancelled': False, 'input_dir': str(folder), 'images': images})
+                return
             if route == "/api/scan":
                 folder = Path(payload.get("folder", "")).expanduser().resolve()
                 images = scan_images(folder)
@@ -248,6 +303,7 @@ class Handler(BaseHTTPRequestHandler):
                 def stop() -> None:
                     time.sleep(0.2)
                     self.app.manager.shutdown()
+                    stop_picker()
                     self.app.shutdown()
 
                 threading.Thread(target=stop, daemon=True).start()
@@ -314,6 +370,7 @@ def main() -> None:
     except KeyboardInterrupt:
         pass
     finally:
+        stop_picker()
         server.manager.shutdown()
         server.server_close()
         print("OCT Coverslip Lab stopped.")

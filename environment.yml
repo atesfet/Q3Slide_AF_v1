@@ -4,6 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - python=3.11
+  - tk=8.6.*
   - numpy=1.26.*
   - scipy=1.14.*
   - tifffile=2024.9.*

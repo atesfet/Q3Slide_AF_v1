@@ -6,7 +6,7 @@ import tempfile
 import threading
 import time
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -32,6 +32,18 @@ class ServerTests(unittest.TestCase):
                     return json.load(response)
             try:
                 self.assertTrue(request('/api/health')['ok'])
+                with patch('oct_app.server.choose_local_path', return_value=str(path)):
+                    picked = request('/api/browse', {'kind': 'image', 'initial_dir': str(root)})
+                    self.assertEqual(picked['images'][0]['path'], str(path.resolve()))
+                    self.assertEqual(picked['images'][0]['suggested_fov_um'], 100)
+                with patch('oct_app.server.choose_local_path', return_value=None):
+                    self.assertTrue(request('/api/browse', {'kind': 'folder'})['cancelled'])
+                with patch('oct_app.server.choose_local_path', return_value=str(root)):
+                    self.assertEqual(len(request('/api/browse', {'kind': 'folder'})['images']), 1)
+                with patch('oct_app.server.choose_local_path', return_value=str(root/'bad.png')):
+                    with self.assertRaises(HTTPError) as invalid:
+                        request('/api/browse', {'kind': 'image'})
+                    self.assertEqual(invalid.exception.code, 400)
                 self.assertEqual(request('/api/config')['images'][0]['suggested_fov_um'], 100)
                 config = {'image_path': str(path), 'fov_um': 100, 'auto_mode': True}
                 preview = request('/api/previews', config)['preview']

@@ -108,6 +108,26 @@ async function scanFolder() {
     $("scanButton").disabled = false;
   }
 }
+async function browseLocal(kind) {
+  formError();
+  const buttons = [$("browseImageButton"), $("browseFolderButton")];
+  buttons.forEach((button) => { button.disabled = true; });
+  const button = kind === "image" ? buttons[0] : buttons[1];
+  const label = button.textContent;
+  button.textContent = "Choose in system dialog…";
+  try {
+    const data = await post("/api/browse", {kind, initial_dir: $("inputFolder").value});
+    if (!data.cancelled) {
+      $("inputFolder").value = data.input_dir;
+      populateImages(data.images);
+    }
+  } catch (error) {
+    formError(error.message);
+  } finally {
+    button.textContent = label;
+    buttons.forEach((item) => { item.disabled = false; });
+  }
+}
 function imageChanged() {
   const option = $("imageSelect").selectedOptions[0];
   if (!option?.value) return;
@@ -537,6 +557,8 @@ $("themeButton").addEventListener("click", () =>
   ),
 );
 $("scanButton").addEventListener("click", scanFolder);
+$("browseImageButton").addEventListener("click", () => browseLocal("image"));
+$("browseFolderButton").addEventListener("click", () => browseLocal("folder"));
 $("imageSelect").addEventListener("change", imageChanged);
 $("fovInput").addEventListener("input", geometryEdited);
 $("rowsInput").addEventListener("input", geometryEdited);

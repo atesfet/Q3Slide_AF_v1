@@ -22,7 +22,7 @@ Do not open `index.html` directly. The launchers serve the app at a local addres
 
 ## Process an image
 
-1. Place an uncompressed ImageJ TIFF Z stack in `input/`, or enter another local folder and click **Scan**.
+1. Click **Browse image…** to select an uncompressed ImageJ TIFF Z stack using your system file chooser, or **Browse folder…** to list TIFFs from a folder. You can also place TIFFs in `input/`, or enter a folder path and click **Scan**. Browsing opens a dialog on the computer running the server; it does not upload or copy the scan.
 2. Select a volume and confirm **Patch FOV**. It is autofilled from a filename containing `700umFOV` or `1mmFOV`, or defaults to 700 µm. It remains editable and is the FOV of one acquisition patch.
 3. Click **Generate initial projection**. The mosaic highlights automatic candidate blank tiles. Click tiles to include/exclude them, use **Tissue contrast** for another view, or restore the automatic selection. Choose at least two no-tissue references.
 4. Choose **Projection**, **Spacing**, or **Both**, then **Run analysis**. Reviewing references is optional; without a preview the original full-volume automatic selection runs.
